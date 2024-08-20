@@ -1,19 +1,21 @@
 import { useState } from 'react'
 import {Link, useNavigate} from "react-router-dom"
+import { signInStart, signInSuccess, signInFailure } from '../redux/user/userSlice'
+import { useDispatch, useSelector } from 'react-redux'
 
 const SignIn = () => {
   const [formData, setFormData] = useState({})
-  const [error, serError] = useState(false)
-  const [loading, serLoading] = useState(false)
+  const { loading, error } = useSelector((state => state.user))
+
   const navigate = useNavigate()
+  const dispatch = useDispatch();
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.id]: e.target.value})
   }
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      serLoading(true)
-      serError(false)
+      dispatch(signInStart());
       const res = await fetch('/api/auth/signin', {
         method: 'POST',
         headers: {
@@ -22,16 +24,14 @@ const SignIn = () => {
         body: JSON.stringify(formData),
       })
       const data = await res.json();
-      console.log(data);
-      serLoading(false)
       if(data.success === false){
-        serError(true)
+        dispatch(signInFailure(data))
         return;
       }
+      dispatch(signInSuccess(data))
       navigate('/')
     } catch (error) {
-      serLoading(false)
-      serError(true)
+      dispatch(signInFailure(error))
     }
   }
 
@@ -56,7 +56,7 @@ const SignIn = () => {
         <button disabled={loading} className='bg-slate-700 text-white p-3 rounded-lg uppercase hover:opacity-95 disabled:opacity-80'>
           {loading ? 'Loading...' : 'Sign In'}
         </button>
-        <p className='text-red-700'>{error && 'Somthing went wrong!'}</p>
+        <p className='text-red-700'>{error ? error.message || 'Somthing went wrong!' : ''}</p>
       </form>
       <div className='flex gap-2 mt-5'>
         <p>Dont Have an account?</p>
